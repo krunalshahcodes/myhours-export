@@ -1,0 +1,16 @@
+{
+  "name": "myhours-export",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "export": "node index.js"
+  },
+  "dependencies": {
+    "axios": "^0.27.2",
+    "date-fns": "^2.29.1",
+    "dotenv": "^16.0.3",
+    "jsonexport": "^3.2.0",
+    "lodash": "^4.17.21"
+  }
+}
