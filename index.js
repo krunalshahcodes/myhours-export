@@ -85,7 +85,9 @@ const exportLogs = async (from, to) => {
       })
       projectLogs = projectLogs.map((log) => ({
         Date: format(new Date(log.date), 'dd-MM-yyyy'),
-        Description: `${log.taskName} ${log.note !== null ? log.note : ''}`,
+        Description: log.taskName
+          ? `${log.taskName} ${log.note !== null ? log.note : ''}`
+          : project.name,
         Hours: log.billableHours,
       }))
       const groupped = groupBy(projectLogs, 'Date')
@@ -99,6 +101,9 @@ const exportLogs = async (from, to) => {
 
       jsonexport(projectLogs, function (err, csv) {
         if (err) return console.error(err)
+        if (!fs.existsSync('logs')) {
+          fs.mkdirSync('logs')
+        }
         fs.writeFileSync(`logs/${project.name}.csv`, csv, 'binary')
       })
     })
@@ -121,8 +126,11 @@ const exportExtraLogs = async (from, to) => {
   }))
   jsonexport(logs, function (err, csv) {
     if (err) return console.error(err)
+    if (!fs.existsSync('logs')) {
+      fs.mkdirSync('logs')
+    }
     fs.writeFileSync(`logs/Extra.csv`, csv, 'binary')
   })
 }
 exportLogs('2022-12-01', '2022-12-04')
-exportExtraLogs('2022-12-01', '2022-12-04')
+// exportExtraLogs('2022-12-01', '2022-12-04')
