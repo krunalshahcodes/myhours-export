@@ -1,8 +1,17 @@
 const axios = require('axios')
-const { startOfMonth, endOfMonth, format } = require('date-fns')
+const {
+  startOfMonth,
+  endOfMonth,
+  format,
+  eachDayOfInterval,
+  startOfDay,
+  isSameDay,
+  isWeekend,
+} = require('date-fns')
 const fs = require('fs')
-const { groupBy, map, sumBy } = require('lodash')
+const { groupBy, map, sumBy, filter, each, reverse } = require('lodash')
 const jsonexport = require('jsonexport')
+const { markdownToTxt } = require('markdown-to-txt')
 require('dotenv').config()
 
 const convertNumToTime = (number) => {
@@ -132,5 +141,74 @@ const exportExtraLogs = async (from, to) => {
     fs.writeFileSync(`logs/Extra.csv`, csv, 'binary')
   })
 }
-exportLogs('2022-12-01', '2022-12-04')
-// exportExtraLogs('2022-12-01', '2022-12-04')
+
+const exportDailyLog = async (from, to) => {
+  const auth = await login()
+  const logs = await getAllTimeLogs(auth, from, to)
+  let dates = eachDayOfInterval({
+    start: new Date(from),
+    end: new Date(to),
+  })
+  dates = reverse(dates)
+
+  let finalLogs = ''
+
+  await Promise.all(
+    dates.map(async (date) => {
+      if (isWeekend(new Date(date))) {
+        return
+      }
+      const currentDayLogs = []
+
+      logs.map((log) => {
+        if (isSameDay(new Date(date), new Date(log.date))) {
+          currentDayLogs.push(log)
+        }
+      })
+
+      finalLogs = `${finalLogs}Date: ${format(
+        new Date(date),
+        'dd-MM-yyyy'
+      )} [${convertNumToTime(
+        sumBy(currentDayLogs, 'billableHours')
+      )}]\n------------------------------\n`
+
+      const currentDayLogsByProject = groupBy(currentDayLogs, 'projectName')
+
+      each(currentDayLogsByProject, (v, k) => {
+        const grouppedByTask = groupBy(v, 'taskName')
+        finalLogs = `${finalLogs}${k}: [${convertNumToTime(
+          sumBy(v, 'billableHours')
+        )}] \n`
+
+        each(grouppedByTask, (v, k) => {
+          map(v, (d) => {
+            finalLogs = `${finalLogs}${d.note !== null ? '' : '- '}${
+              d.taskName
+            } [${d.startEndTime}]\n`
+          })
+          finalLogs = `${finalLogs}${
+            typeof v.map !== 'undefined' && v[0].note !== null
+              ? markdownToTxt(v[0]?.note?.trim())
+              : ''
+          }\n`
+        })
+      })
+
+      finalLogs = `${finalLogs} \n\n`
+    })
+  )
+
+  if (!fs.existsSync('logs')) {
+    fs.mkdirSync('logs')
+  }
+
+  fs.writeFileSync(`logs/logs-to-send.txt`, finalLogs, 'binary')
+}
+
+const startDate = '2023-01-01'
+const endDate = '2023-01-22'
+
+exportLogs(startDate, endDate)
+exportExtraLogs(startDate, endDate)
+exportDailyLog(startDate, endDate)

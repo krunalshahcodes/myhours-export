@@ -11,6 +11,7 @@
     "date-fns": "^2.29.1",
     "dotenv": "^16.0.3",
     "jsonexport": "^3.2.0",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "markdown-to-txt": "^2.0.1"
   }
 }
